@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
-from sql import app, db, bcrypt
-from sql.models import users
+from project import app, db, bcrypt
+from project.models import users
 import jwt
 
 @app.route('/', methods=['POST','GET'])
