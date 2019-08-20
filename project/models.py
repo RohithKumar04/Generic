@@ -1,4 +1,4 @@
-from sql import db
+from project import db
 
 class users(db.Model):
     #id = db.Column(db.Integer, primary_key = True)
