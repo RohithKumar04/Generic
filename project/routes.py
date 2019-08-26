@@ -14,7 +14,7 @@ def signup():
         mail = request.form['emailID']
         real_pwd = request.form['passwd']
         hash_pwd = bcrypt.generate_password_hash(real_pwd)
-        new_data = users(name= user, email=mail, passwd=hash_pwd)
+        new_data = users(user, mail, hash_pwd)
 
         try:
             db.session.add(new_data)
