@@ -10,66 +10,99 @@ load_dotenv()
 app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb://localhost:27017/"+os.getenv("mongodbName")
 app.config["SECRET_KEY"]= os.getenv("secret_key")
-#app.config["MONGO_DBNAME"]= "student_db"
 mongo = PyMongo(app)
 
+buses = mongo.db.buses
+use = mongo.db.user
 
-@app.route("/bus_register", methods=["POST", "GET"])
-def bus_register():
-    use = mongo.db.buses
+@app.route("/bus", methods=["POST","GET"])
+def bus():
     if request.method == "POST":
-        use.insert_one({"_id":request.form["bus_num"],"reg_no": request.form["RegNo"],"driverDetails":{"name":request.form["driver"],"driver_no":request.form["driver_no"]},"students":[]})
-        return jsonify({"message":"successfully added"})
+        buses.insert_one({"_id":request.json["bus_num"],"reg_no": request.json["RegNo"],"driverDetails":{"name":request.json["driver"],"driver_no":request.json["driver_no"]},"students":[]})
+        return jsonify({"message":"bus successfully added"})
+
+    elif request.method == "GET":
+        bus_list = buses.find()
+        for doc in bus_list:
+            print(doc)
+        return jsonify({"message":"bus details"})
+    
     else:
-        return render_template("bus_register.html")
+        return jsonify({"message":"invalid data"})
 
-# def login_required(f):
-#     @wraps(f)
-#     def wrap(*args, **kwargs):
-#         if "user" in session:
-#             return f(*args, **kwargs)
-#         else:
-#             return jsonify({"message":"you need to login first"})
-#     return wrap
+@app.route("/bus/<id>", methods=["PUT", "GET"])
+def bus_update(id):
+    if buses.find_one({"_id":id}):
+        if request.method == "PUT":
+            buses.update({"_id":id},{"$set":{"reg_no": request.json["RegNo"],"driverDetails":{"name":request.json["driver"],  "driver_no":request.json["driver_no"]}}})
+            return jsonify({"message":"successfully\ updated"})
 
-# @app.route("/ist_login", methods=["POST", "GET"])
-# def ist_login():
-#     use = mongo.db.user
-#     if request.method == "POST":
-#         current_user = use.find_one({"_id":request.form["ist_emailID"]})
-#         if current_user:
-#             if current_user["password"] == request.form["ist_passwd"]:
-#                 session["user"] = current_user
-#                 return jsonify({"message":"successfully logged in "})
-#             else:
-#                 return jsonify({"message":"incorrect password"})
-#         else:
-#             return jsonify({"message":"username unavailable"})
-#     else:
-#         return render_template("signup.html")
+        elif request.method == "GET":
+            print(buses.find_one({"_id":id}))
+            return jsonify({"message":"deatils of bus"})
+    else:
+        return jsonify({"message":"invalid user"})
+
+@app.route("/bus/<id>", methods=["DELETE"])
+def bus_delete(id):
+    if buses.find_one({"_id":id}):
+        if request.method == "DELETE":
+            buses.remove({"_id":id})
+            return jsonify({"message":"successfully\ deleted"})
+    else:
+        return jsonify({"message":"invalid user"})
 
 
-
-@app.route("/student_register", methods=["POST", "GET"])
-def student_register():
-    buses = mongo.db.buses
-    use = mongo.db.user
+@app.route("/students", methods=["POST", "GET"])
+def students():
     if request.method == "POST":
-        bus_id = buses.find_one({"_id":request.form["stu_bus_no"]})
+        bus_id = buses.find_one({"_id":request.json["stu_bus_no"]})
         if bus_id:
-            studet_id = request.form["stu_std"]+request.form["stu_sec"]+request.form["stu_rollno"]
-            # print(bus_id["students"])
-            buses.update({"_id":request.form["stu_bus_no"]},
-                        { "$push":{"students":{"_id":studet_id, "name":request.form["stu_name"],
-                                "rollno":request.form["stu_rollno"],
-                            "std&sec":request.form["stu_std"]+" "+request.form["stu_sec"]}}})
+            studet_id = request.json["stu_name"]+request.json["parent_phone"]
+            buses.update({"_id":request.json["stu_bus_no"]},
+                        { "$push":{"students":{"_id":studet_id, "name":request.json["stu_name"],
+                                "rollno":request.json["stu_rollno"],
+                            "std&sec":request.json["stu_std"]+" "+request.json["stu_sec"]}}})
 
-            use.insert_one({"_id":studet_id,"name": request.form["stu_name"],"std":request.form["stu_std"],"sec":request.form["stu_sec"],"rollno":request.form["stu_rollno"],"busno":request.form["stu_bus_no"],"parent name":request.form["parent_name"],"parent num":request.form["parent_phone"],"blood":request.form["stu_blood"]})
-            return (bus_id["students"][0])
+            use.insert_one({"_id":studet_id,"name": request.json["stu_name"],"std":request.json["stu_std"],"sec":request.json["stu_sec"],"rollno":request.json["stu_rollno"],"busno":request.json["stu_bus_no"],"parent name":request.json["parent_name"],"parent num":request.json["parent_phone"],"blood":request.json["stu_blood"]})
+            return jsonify({"message":"student added successfully"})
         else:
             return jsonify({"message":"invalid bus"})
+
+    elif request.method == "GET":
+        user_list = use.find()
+        for user in user_list:
+            print(user)
+        return jsonify({"message":"done"})
+
     else:
-        return render_template("stu_register.html")
+        return jsonify({"message":"invalid bus"})
+
+
+@app.route("/students/<id>", methods=["DELETE","PUT","GET"])
+def del_students(id):
+    if request.method == "PUT":
+        user_id =use.find_one({"_id":id})
+        print(user_id)
+        buses.update({"_id":user_id["busno"]},{"$pull":{"students":{"_id":id}}})
+        buses.update({"_id":request.json["stu_bus_no"]},
+                        { "$push":{"students":{"_id":id, "name":request.json["stu_name"],
+                                "rollno":request.json["stu_rollno"],
+                            "std&sec":request.json["stu_std"]+" "+request.json["stu_sec"]}}})
+        use.update({"_id":id},{"name": request.json["stu_name"],"std":request.json["stu_std"],"sec":request.json["stu_sec"],"rollno":request.json["stu_rollno"],"busno":request.json["stu_bus_no"],"parent name":request.json["parent_name"],"parent num":request.json["parent_phone"],"blood":request.json["stu_blood"]})
+        return jsonify({"message":"successfully updated"})
+
+    elif request.method == "GET":
+            print(use.find_one({"_id":id}))
+            return jsonify({"message":"deatils of student"})
+
+    elif request.method == "DELETE":
+        user_id =use.find_one({"_id":id})
+        buses.update({"_id":user_id["busno"]},{"$pull":{"students":{"_id":id}}})
+        use.remove({"_id":id})
+        return jsonify({"message":"bus deleted"})
+    else:
+       return jsonify({"message":"invalid bus"})
 
 if __name__ == "__main__":
     app.run(debug=True)
