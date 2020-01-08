@@ -28,7 +28,7 @@ def bus():
         return jsonify({"message":"bus details"})
     
     else:
-        return jsonify({"message":"invalid data"})
+        return jsonify({"message":"data is not valid"})
 
 @app.route("/bus/<id>", methods=["PUT", "GET"])
 def bus_update(id):
